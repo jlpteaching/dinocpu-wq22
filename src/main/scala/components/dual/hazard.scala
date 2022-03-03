@@ -66,12 +66,24 @@ class HazardUnit extends Module {
 
   val stalling_due_to_pipeA = Wire(Bool())
   val stalling_due_to_pipeB = Wire(Bool())
-  stalling_due_to_pipeA := false.B
-  stalling_due_to_pipeB := false.B
+
+  stalling_due_to_pipeA := io.pipeA_idex_memread && (io.pipeA_idex_rd === io.id_pipeA_rs1 || io.pipeA_idex_rd === io.id_pipeA_rs2 || io.pipeA_idex_rd === io.id_pipeB_rs1 || io.pipeA_idex_rd === io.id_pipeB_rs2)
+  stalling_due_to_pipeB := io.pipeB_idex_memread && (io.pipeB_idex_rd === io.id_pipeA_rs1 || io.pipeB_idex_rd === io.id_pipeA_rs2 || io.pipeB_idex_rd === io.id_pipeB_rs1 || io.pipeB_idex_rd === io.id_pipeB_rs2)
 
   when (io.pipeA_exmem_taken || io.pipeB_exmem_taken) {
-    // When there's a branch taken, flush!
+    io.pcfromtaken  := true.B
+    io.pcstall      := false.B
+    io.if_id_stall  := false.B
+    io.if_id_flush  := true.B
+    io.id_ex_flush  := true.B
+    io.ex_mem_flush := true.B
   } .elsewhen (stalling_due_to_pipeB || stalling_due_to_pipeA) {
-    // When we have to stall for load to use, stall!
+    io.pcfromtaken  := false.B
+    io.pcstall      := true.B
+    io.if_id_stall  := true.B
+    io.id_ex_flush  := true.B
+    io.ex_mem_flush := false.B
+    io.if_id_flush  := false.B
   }
+
 }
